@@ -5,7 +5,6 @@ import os
 import sys
 from stable_baselines3 import DQN
 
-# Import the FIXED version
 from neuro_fuzzy import (
     NeuroFuzzyController, 
     initialize_student, 
@@ -54,7 +53,7 @@ def get_teacher_data(teacher, env_name, n_samples=5000):
             print(f"  Collected: {collected}/{n_samples} samples from {episodes} episodes")
     
     env.close()
-    print(f"✓ Collected {len(states)} samples from {episodes} episodes")
+    print(f"Collected {len(states)} samples from {episodes} episodes")
     
     return np.array(states), np.array(q_vals)
 
@@ -76,7 +75,7 @@ def evaluate_controller(controller, env_name, n_episodes=10, verbose=True):
                 q, _, _ = controller(state_tensor)
                 
                 if torch.isnan(q).any():
-                    print(f"⚠️  NaN in Q-values during evaluation, using random action")
+                    print(f" NaN in Q-values during evaluation, using random action")
                     action = env.action_space.sample()
                 else:
                     action = torch.argmax(q).item()
@@ -163,29 +162,29 @@ def main():
     
     # Configuration
     ENV_NAME = "LunarLander-v3"
-    TEACHER_PATH = "models/best_model"  # Points to models/best_model.zip
+    TEACHER_PATH = "models/best_model"
     NUM_RULES = 6
     DISTILL_EPISODES = 600
     LEARNING_RATE = 0.003
     
     # Step 1: Load Teacher
-    print("[Step 1] Loading Teacher DQN...")
+    print("1 Loading Teacher DQN...")
     if os.path.exists(TEACHER_PATH + ".zip"):
-        print(f"  Loading from {TEACHER_PATH}.zip")
+        print(f"Loading from {TEACHER_PATH}.zip")
         teacher = DQN.load(TEACHER_PATH)
-        print(f"  ✓ Teacher loaded successfully")
+        print(f"Teacher loaded successfully")
     else:
-        print(f"  ❌ Model not found at {TEACHER_PATH}.zip")
+        print(f"Model not found at {TEACHER_PATH}.zip")
         print(f"  Please train a teacher model first using train_teacher.py")
         return
     
     # Step 2: Collect Initialization Data
-    print(f"\n[Step 2] Collecting Initialization Data...")
+    print(f"\nCollecting Initialization Data...")
     X, Y = get_teacher_data(teacher, ENV_NAME, n_samples=3000)
     print(f"  State shape: {X.shape}, Q-values shape: {Y.shape}")
     
     # Step 3: Initialize Student
-    print(f"\n[Step 3] Initializing Student with {NUM_RULES} Rules...")
+    print(f"\nInitializing Student with {NUM_RULES} Rules...")
     student = NeuroFuzzyController(
         num_inputs=6, 
         num_rules=NUM_RULES, 
@@ -199,7 +198,7 @@ def main():
     check_model_health(student)
     
     # Step 4: Distillation
-    print(f"\n[Step 4] Distilling Policy...")
+    print(f"\nDistilling Policy...")
     print(f"  Episodes: {DISTILL_EPISODES}")
     print(f"  Learning Rate: {LEARNING_RATE}")
     
@@ -216,42 +215,42 @@ def main():
     # Check health after training
     print("\n  Checking model health after training...")
     if not check_model_health(student):
-        print("\n  ⚠️  WARNING: Model has health issues. Results may be poor.")
+        print("\n Model has health issues (NaN).")
     
     # Step 5: Post-Processing
-    print(f"\n[Step 5] Post-Processing...")
+    print(f"\nPost-Processing...")
     student = optimize_rules(student, threshold=0.92, weight_threshold=0.01)
     
     # Step 6: Analysis
-    print(f"\n[Step 6] Analyzing Learned Rules...")
+    print(f"\nAnalyzing Learned Rules...")
     print_rules(student)
     analyze_rules(student)
     
     # Step 7: Evaluation
-    print(f"\n[Step 7] Evaluating Controller...")
+    print(f"\nEvaluating Controller...")
     student_rewards = evaluate_controller(student, ENV_NAME, n_episodes=20, verbose=False)
     
     # Step 8: Comparison
-    print(f"\n[Step 8] Comparing with Teacher...")
+    print(f"\nComparing with Teacher...")
     teacher_rewards, student_rewards = compare_teacher_student(
         teacher, student, ENV_NAME, n_episodes=10
     )
     
     # Step 9: Visualization
-    print(f"\n[Step 9] Generating Visualizations...")
+    print(f"\nGenerating Visualizations...")
     create_all_visualizations(student, save_dir="./outputs")
     
     # Step 10: Save Model
-    print(f"\n[Step 10] Saving Model...")
+    print(f"\nSaving Model...")
     torch.save(student.state_dict(), "fuzzy_controller.pth")
-    print(f"  ✓ Saved to fuzzy_controller.pth")
+    print(f"Saved to fuzzy_controller.pth")
     
     # Step 11: Demo (optional)
-    print(f"\n[Step 11] Demo")
+    print(f"\nDemo")
     demo = input("Run visual demo? (y/n): ").strip().lower()
     
     if demo == 'y':
-        print("\nRunning visual demo (press Ctrl+C to stop)...")
+        print("\nRunning visual demo...")
         env = gym.make(ENV_NAME, render_mode="human")
         
         try:
@@ -297,10 +296,10 @@ if __name__ == "__main__":
     try:
         main()
     except KeyboardInterrupt:
-        print("\n\n⚠️  Training interrupted by user")
+        print("\n\nTraining interrupted by user")
         sys.exit(0)
     except Exception as e:
-        print(f"\n\n❌ Error: {e}")
+        print(f"\n\nError: {e}")
         import traceback
         traceback.print_exc()
         sys.exit(1)
